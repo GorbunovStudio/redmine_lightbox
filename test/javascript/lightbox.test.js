@@ -9,6 +9,35 @@ describe('RedmineLightbox', () => {
   });
 
   // ── collectAllLinks ─────────────────────────────────────────────────
+  describe('Dropbox previews', () => {
+    it('preserves the original link and joins the gallery with a raw image URL', () => {
+      document.body.innerHTML = '<div class="wiki"><a href="https://www.dropbox.com/scl/fi/example/photo.jpg?rlkey=example&amp;dl=0">Screenshot</a></div>';
+      const original = document.querySelector('a').href;
+      window.RedmineLightbox.initializeLightbox();
+      window.RedmineLightbox.initializeLightbox();
+      const previews = document.querySelectorAll('a.optimus-dropbox-preview');
+      expect(previews).toHaveLength(1);
+      expect(document.querySelector('a').href).toBe(original);
+      const url = new URL(previews[0].href);
+      expect(url.searchParams.get('raw')).toBe('1');
+      expect(url.searchParams.get('rlkey')).toBe('example');
+      expect(url.searchParams.has('dl')).toBe(false);
+      expect(previews[0].querySelector('img').alt).toBe('Screenshot');
+      expect(window.RedmineLightbox.collectAllLinks()).toEqual([previews[0]]);
+      expect(GLightbox.mock.calls.at(-1)[0].elements[0].type).toBe('image');
+    });
+
+    it('ignores other hosts, non-image links, and non-web protocols', () => {
+      document.body.innerHTML = `
+        <a href="https://www.dropbox.com.example.org/photo.jpg">Other host</a>
+        <a href="https://www.dropbox.com/report.pdf">PDF</a>
+        <a href="ftp://www.dropbox.com/photo.png">FTP</a>
+      `;
+      window.RedmineLightbox.initializeLightbox();
+      expect(document.querySelectorAll('.optimus-dropbox-preview')).toHaveLength(0);
+    });
+  });
+
   describe('collectAllLinks', () => {
     it('finds attachment image links', () => {
       document.body.innerHTML = `

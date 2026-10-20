@@ -19,6 +19,7 @@
     'table.list.files a.icon-magnifier:not([href$=".pdf"])',
     '.controller-dmsf #browser a.lightbox',
     'table.list.files td.filename a.lightbox:not(.pdf)',
+    'a.optimus-dropbox-preview',
   ];
 
   const PDF_SELECTORS = [
@@ -417,7 +418,29 @@
     lastElements = [];
   }
 
+  function addDropboxPreviews() {
+    document.querySelectorAll('a[href*="www.dropbox.com"]:not(.optimus-dropbox-preview)').forEach((link) => {
+      const url = new URL(link.href);
+      if (url.hostname !== 'www.dropbox.com' || !['https:', 'http:'].includes(url.protocol) || !/\.(png|jpg)$/i.test(url.pathname)) { return; }
+      if (link.nextElementSibling?.classList.contains('optimus-dropbox-preview')) { return; }
+
+      url.searchParams.delete('dl');
+      url.searchParams.set('raw', '1');
+      const preview = document.createElement('a');
+      preview.href = url.toString();
+      preview.className = 'optimus-dropbox-preview';
+      preview.dataset.caption = link.textContent.trim();
+      const image = document.createElement('img');
+      image.src = preview.href;
+      image.alt = preview.dataset.caption;
+      image.loading = 'lazy';
+      preview.append(image);
+      link.after(preview);
+    });
+  }
+
   function initializeLightbox() {
+    addDropboxPreviews();
     const allLinks = collectAllLinks();
     if (allLinks.length === 0) { return; }
 
